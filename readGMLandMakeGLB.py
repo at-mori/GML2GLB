@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 from collections import defaultdict
 import trimesh
 from trimesh.exchange.gltf import export_glb
+from scipy.ndimage import zoom
 
 # GMLの名前空間
 ns = {
@@ -41,7 +42,7 @@ def load_dem_from_gml(xml_path):
             if len(parts) != 2:
                 continue
             _, val = parts
-            values.append(float(val) if val != '-9999.00' else np.nan)
+            values.append(float(val) if val != '-9999.00' else 0.0) # 海は 0.0 に。
 
         data = np.array(values).reshape((rows, cols))
         # 南北反転（北から入るデータを南からに変更）
@@ -52,13 +53,14 @@ def load_dem_from_gml(xml_path):
         print(f"❌ 読み込みエラー: {xml_path}: {e}")
         return None
 
-def cutout_around_max(grid, size=1000):
+def cutout_around_max(grid, xsize=1000, ysize=None):
     """
     grid内の最大値を中心に、指定サイズの正方領域を切り出す。
 
     Parameters:
         grid (np.ndarray): 標高データの2次元配列
-        size (int): 切り出す正方形の一辺のサイズ（デフォルト1000）
+        xsize (int): 切り出す長方形の一辺のサイズ（東西）（デフォルト1000）
+        ysize (int): 切り出す長方形の一辺のサイズ（南北）（デフォルト x*1.23 ）
 
     Returns:
         cutout (np.ndarray): 切り出された2次元配列
@@ -66,18 +68,24 @@ def cutout_around_max(grid, size=1000):
         center_row (int): 最大値の行インデックス
         center_col (int): 最大値の列インデックス
     """
+    if ysize is None:
+        ysize = round(xsize * 1.23)
+    if ysize % 2 != 0:
+        ysize += 1  # 奇数なら +1 して偶数にする
+
     # NaNを無視して最大値の位置を取得
     flat_index = np.nanargmax(grid)
     center_row, center_col = np.unravel_index(flat_index, grid.shape)
     max_value = grid[center_row, center_col]
 
-    half = size // 2
+    xHalf = xsize // 2
+    yHalf = ysize // 2
 
     # 範囲を制限（gridの端を越えないように。中心を合わせるように奇数のグリッドに。）
-    start_row = max(center_row - half, 0)
-    end_row   = min(center_row + half+1, grid.shape[0])
-    start_col = max(center_col - half, 0)
-    end_col   = min(center_col + half+1, grid.shape[1])
+    start_row = max(center_row - xHalf, 0)
+    end_row   = min(center_row + xHalf+1, grid.shape[0])
+    start_col = max(center_col - yHalf, 0)
+    end_col   = min(center_col + yHalf+1, grid.shape[1])
 
     cutout = grid[start_row:end_row, start_col:end_col]
 
@@ -85,44 +93,6 @@ def cutout_around_max(grid, size=1000):
     print(f"✅ 切り出しサイズ: {cutout.shape}")    
 
     return cutout, max_value, center_row, center_col
-
-def concat_data(files):
-    tiles = []
-
-    for f in files:
-        if not os.path.exists(f):
-            print(f"⚠️ ファイルが見つかりません: {f}")
-            continue
-        result = load_dem_from_gml(f)
-        if result:
-            data, lat0, lon0 = result
-            print(f"✅ 読み込み成功: {f}, shape={data.shape}, lat0={lat0}, lon0={lon0}")
-            tiles.append((data, lat0, lon0))
-
-    if not tiles:
-        print("⚠️ 有効な標高データが1つも読み込めませんでした。")
-        sys.exit(1)
-
-    # 緯度 → 経度 の順にソート
-    tiles.sort(key=lambda t: (t[1], t[2]))
-
-    # 緯度帯ごとに経度順で並べて横方向に連結
-    rows_by_lat = defaultdict(list)
-    for data, lat0, lon0 in tiles:
-        rows_by_lat[lat0].append((lon0, data))
-
-    rows = []
-    for lat0 in sorted(rows_by_lat.keys()):
-        row_tiles = sorted(rows_by_lat[lat0], key=lambda x: x[0])  # 経度でソート
-        row_data = [tile for _, tile in row_tiles]
-        row = np.hstack(row_data)
-        rows.append(row)
-
-    # 最終的な全体グリッドを縦方向に連結
-    grid = np.vstack(rows)
-    print(f"✅ 完成グリッドサイズ: {grid.shape}")
-
-    return grid
 
 def downsample_with_center(cutout: np.ndarray, step: int) -> np.ndarray:
     """
@@ -152,6 +122,27 @@ def downsample_with_center(cutout: np.ndarray, step: int) -> np.ndarray:
     j_start = center_j % step
 
     return cutout[i_start::step, j_start::step]
+
+def adjust_east_west_scaling(cutout: np.ndarray, lat_mean_deg: float) -> np.ndarray:
+    """
+    緯度に応じて、経度方向の実距離が縮む効果を補正（圧縮）する。
+
+    Parameters:
+        cutout: 標高データ（2D配列、緯度経度グリッド）
+        lat_mean_deg: 対象領域の代表緯度（度）
+
+    Returns:
+        東西方向が圧縮されたcutout
+    """
+    lat_rad = np.radians(lat_mean_deg)
+    scale_east_west = np.cos(lat_rad)  # 例：35度なら約0.819
+
+    cutout_scaled = zoom(cutout, zoom=(1, scale_east_west), order=1)
+    
+    # 補間後の末端列をカット（1列以上）
+    cutout_scaled = cutout_scaled[:, :-2]  # ← 1～2列分カットして様子を見る
+
+    return cutout_scaled
 
 def generate_triangle_mesh(Z: np.ndarray, scale=10):
     """
@@ -220,30 +211,77 @@ def export_mesh_to_glb(vertices: np.ndarray, faces: np.ndarray, color=(0, 255, 0
         f.write(export_glb(scene))
     print(f"✅ glbファイルを出力しました: {filename}")
 
+def concat_data(files):
+    tiles = []
+    latitudes = []
+    for f in files:
+        if not os.path.exists(f):
+            print(f"⚠️ ファイルが見つかりません: {f}")
+            continue
+        result = load_dem_from_gml(f)
+        if result:
+            data, lat0, lon0 = result
+            latitudes.append(lat0)
+            print(f"✅ 読み込み成功: {f}, shape={data.shape}, lat0={lat0}, lon0={lon0}")
+            tiles.append((data, lat0, lon0))
+
+    if not tiles:
+        print("⚠️ 有効な標高データが1つも読み込めませんでした。")
+        sys.exit(1)
+
+    # 緯度 → 経度 の順にソート
+    tiles.sort(key=lambda t: (t[1], t[2]))
+
+    # 緯度帯ごとに経度順で並べて横方向に連結
+    rows_by_lat = defaultdict(list)
+    for data, lat0, lon0 in tiles:
+        rows_by_lat[lat0].append((lon0, data))
+
+    rows = []
+    for lat0 in sorted(rows_by_lat.keys()):
+        row_tiles = sorted(rows_by_lat[lat0], key=lambda x: x[0])  # 経度でソート
+        row_data = [tile for _, tile in row_tiles]
+        row = np.hstack(row_data)
+        rows.append(row)
+
+    # 最終的な全体グリッドを縦方向に連結
+    grid = np.vstack(rows)
+
+    # 緯度の最大値と最小値の平均が平均の緯度
+    latitudes = [lat0 for _, lat0, _ in tiles]
+    lat_min = min(latitudes)
+    lat_max = max(latitudes)
+    lat_mean = (lat_min + lat_max) / 2
+
+    print(f"✅ 完成グリッドサイズ: {grid.shape}, 平均緯度: {lat_mean:.4f}")
+    return grid, lat_mean
+
 def main():
     if len(sys.argv) < 2:
         print("使い方: python3 readGML.py ファイル1.xml ファイル2.xml ...")
         sys.exit(1)
 
     # ファイルを読み込み、tiles データを作成する。
-    grid = concat_data(sys.argv[1:])
+    grid, lat_mean = concat_data(sys.argv[1:])
 
     # 切り出し
     cutout, max_val, row, col = cutout_around_max(grid, 500)
 
     # 海を表示できるように。
-    cutout = np.nan_to_num(cutout, nan=0.0)
+    # cutout = np.nan_to_num(cutout, nan=0.0)
+
+    # 東西方向のcos緯度補正
+    cutout = adjust_east_west_scaling(cutout, lat_mean)
     
     # 間引き。中心は保持したままで。
     cutout = downsample_with_center(cutout, 3)
-    
-    vertices, faces = generate_triangle_mesh(cutout,20)
+
+    # 上で３つごとにデータは間引いている（格子間隔30mごとにしている）のを、1グリッド30mとしている。
+    # 高さの比率は水平スケールに対して1倍していることになる。
+    vertices, faces = generate_triangle_mesh(cutout, 20)
     # ----- 平行移動でモデル原点を中心に -----
     vertices[:, 0] -= (np.max(vertices[:, 0]) + np.min(vertices[:, 0])) / 2
     vertices[:, 1] -= (np.max(vertices[:, 1]) + np.min(vertices[:, 1])) / 2
-
-    # ----- 高さの最小値を引いて 0 に揃え -----
-    vertices[:, 2] -= np.min(vertices[:, 2])
 
     # --- 高さの最小値をゼロに揃える ---
     # min_z = np.nanmin(vertices[:, 2])
