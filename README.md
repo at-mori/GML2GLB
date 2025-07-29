@@ -59,7 +59,7 @@ python3 readGMLandMakeGLB.py KamuiNuburi/FG*.xml
 
 ---
 
-## ■ ファイル構成（例）
+## ■ ファイル構成
 
 ```
 GML2GLB/
