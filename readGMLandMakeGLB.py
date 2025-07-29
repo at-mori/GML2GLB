@@ -222,7 +222,7 @@ def export_mesh_to_glb(vertices: np.ndarray, faces: np.ndarray, color=(0, 255, 0
 
 def main():
     if len(sys.argv) < 2:
-        print("使い方: ./readGML.py ファイル1.xml ファイル2.xml ...")
+        print("使い方: python3 readGML.py ファイル1.xml ファイル2.xml ...")
         sys.exit(1)
 
     # ファイルを読み込み、tiles データを作成する。
