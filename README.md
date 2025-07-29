@@ -10,7 +10,7 @@
 
 - Python 3.8 以上
 - 利用するモジュール:  
-  `sys`, `os`, `numpy`, `xml`, `collections`, `trimesh`
+  `sys`, `os`, `numpy`, `xml`, `collections`, `trimesh`, `scipy`
 
 ## ■ インストール手順
 
@@ -30,7 +30,7 @@ cd GML2GLB
 - ダウンロードにはユーザー登録が必要です。
 - 現状では、グリッドを3つごとに選んで間引いています。
 - 水平方向に対して、高さ方向は1.5倍に強調されています。
-- 正確には緯度の違いによる補正が必要ですが、対応していません。
+- 緯度の違いによる補正は精密ではありません。
 
 ### 2. GMLファイルを展開
 
@@ -41,13 +41,7 @@ cd GML2GLB
 次のように実行します：
 
 ```bash
-python3 readGMLandMakeGLB.py FG-GML-xxxx-xx-dem10b-YYYYMMDD.xml
-```
-
-複数ファイルを一括で処理することも可能です：
-
-```bash
-python3 readGMLandMakeGLB.py KamuiNuburi/FG*.xml
+python3 readGMLandMakeGLB.py FG-GML-*.xml
 ```
 
 実行が成功すると、`terrain.glb` が生成されます。
