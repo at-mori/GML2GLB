@@ -276,8 +276,8 @@ def main():
     # 間引き。中心は保持したままで。
     cutout = downsample_with_center(cutout, 3)
 
-    # 上で３つごとにデータは間引いている（格子間隔30mごとにしている）のを、1グリッド30mとしている。
-    # 高さの比率は水平スケールに対して1倍していることになる。
+    # 上で３つごとにデータは間引いている（格子間隔30mごとにしている）のを、1グリッド20mとしている。
+    # 高さの比率は水平スケールに対して1.5倍していることになる。
     vertices, faces = generate_triangle_mesh(cutout, 20)
     # ----- 平行移動でモデル原点を中心に -----
     vertices[:, 0] -= (np.max(vertices[:, 0]) + np.min(vertices[:, 0])) / 2
