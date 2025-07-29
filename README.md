@@ -17,8 +17,7 @@
 ```bash
 git clone https://github.com/at-mori/GML2GLB.git
 cd GML2GLB
-
----
+```
 
 ## ■ 使用方法
 
