@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8">
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
@@ -16,6 +17,7 @@
         padding: 10px;
         font-family: monospace;
         z-index: 9999;
+        font-size: 10px;
       }
     </style>
   </head>
@@ -41,13 +43,13 @@
 
           marker.addEventListener('markerFound', function() {
             console.log('Marker Found: HIRO');
-            debugMessage.textContent = 'AR Status: Marker Found!';
+            debugMessage.textContent = '出典：国土地理院「基盤地図情報 数値標高モデル」/AR Status: Marker Found!';
             indicatorBox.setAttribute('visible', true); // マーカー認識時にボックスを表示
           });
 
           marker.addEventListener('markerLost', function() {
             console.log('Marker Lost: HIRO');
-            debugMessage.textContent = 'AR Status: Marker Lost. Waiting...';
+            debugMessage.textContent = '出典：国土地理院「基盤地図情報 数値標高モデル」/AR Status: Marker Lost. Waiting...';
             indicatorBox.setAttribute('visible', false); // マーカー非認識時にボックスを非表示
           });
         }
