@@ -54,7 +54,7 @@ python3 readGMLandMakeGLB.py FG-GML-*.xml
 
 ## ■ データの出典
 
-国土地理院「基盤地図情報 数値標高モデル」[https://fgd.gsi.go.jp](https://fgd.gsi.go.jp)
+国土地理院「基盤地図情報 数値標高モデル」[https://service.gsi.go.jp/kiban/](https://service.gsi.go.jp/kiban/)
 
 ---
 
