@@ -52,6 +52,10 @@ python3 readGMLandMakeGLB.py FG-GML-*.xml
 
 スマートフォンなどで `sample.html` にアクセスし、マーカー（Hiroなど）をカメラに映せば、AR 上に立体地形が表示されます。
 
+## ■ データの出典
+
+国土地理院「基盤地図情報 数値標高モデル」[https://fgd.gsi.go.jp](https://fgd.gsi.go.jp)
+
 ---
 
 ## ■ ファイル構成
