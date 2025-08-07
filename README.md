@@ -4,7 +4,7 @@
 
 ## ■ サンプル
 
-- [AR技術を活用した立体感覚の涵養を目的とする地学教材の開発／火山の形状（AR教材のサンプル）](https://robo.mydns.jp/WebAR/index.html)
+- [AR技術を活用した立体感覚の涵養を目的とする地学教材の開発／火山の形状（AR教材のサンプル）](https://robo.mydns.jp/WebAR/index.html#kazan)
 
 ## ■ 必要な環境
 
