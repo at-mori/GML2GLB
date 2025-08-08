@@ -44,7 +44,7 @@ cd GML2GLB
 python3 readGMLandMakeGLB.py FG-GML-*.xml
 ```
 
-実行が成功すると、`terrain.glb` が生成されます。
+標高が最も高い点が自動的に認識されて、その周辺が切り出されます。実行が成功すると、`terrain.glb` が生成されます。
 
 ### 4. WebAR で表示する
 
