@@ -25,7 +25,7 @@ cd GML2GLB
 
 [基盤地図情報ダウンロードサービス（数値標高モデル）](https://service.gsi.go.jp/kiban/app/map/?search=dem) から 10m メッシュ（区分：10B）の GML データをダウンロードします。
 <img src="https://robo.mydns.jp/WebAR/figs/ChiriinPage.jpg" width=256>
-- 山頂を中心に約 30km 四方（例：3×3タイル）のデータが必要です。  
+- 山頂を中心に約 30km 四方（例：2×2タイル）のデータが必要です。  
 - 境界に近い山頂の場合は、複数の GML ファイルを同時に指定してください。  
 - ダウンロードにはユーザー登録が必要です。
 - 現状では、グリッドを3つごとに選んで間引いています。
